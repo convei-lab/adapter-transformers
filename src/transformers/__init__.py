@@ -2,7 +2,7 @@
 # There's no way to ignore "F401 '...' imported but unused" warnings in this
 # module, but to preserve other warnings. So, don't check this module at all.
 
-__version__ = "2.11.0"
+__version__ = "1.0.0"
 
 # Work around to update TensorFlow's absl.logging threshold which alters the
 # default Python logging output behavior when present.
@@ -53,6 +53,7 @@ from .data import (
     SquadV1Processor,
     SquadV2Processor,
     glue_convert_examples_to_features,
+    conceptnet_convert_examples_to_features,
     glue_output_modes,
     glue_processors,
     glue_tasks_num_labels,
@@ -61,6 +62,9 @@ from .data import (
     xnli_output_modes,
     xnli_processors,
     xnli_tasks_num_labels,
+    conceptnet_output_modes,
+    conceptnet_processors,
+    conceptnet_tasks_num_labels,
 )
 
 # Files and general utilities
@@ -145,16 +149,17 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 if is_sklearn_available():
-    from .data import glue_compute_metrics, xnli_compute_metrics
+    from .data import glue_compute_metrics, xnli_compute_metrics, conceptnet_compute_metrics
 
 
 # Adapters
 if is_torch_available():
-    from .adapter_training import AdapterArguments, setup_task_adapter_training
+    from .adapter_training import AdapterArguments, MultiLingAdapterArguments
     from .adapter_model_mixin import (
         WeightsLoaderHelper,
         WeightsLoader,
         AdapterLoader,
+        AdapterFusionLoader,
         PredictionHeadLoader,
         ModelAdaptersMixin,
         ModelWithHeadsAdaptersMixin,
@@ -388,6 +393,7 @@ if is_torch_available():
     from .trainer import Trainer, set_seed, torch_distributed_zero_first, EvalPrediction
     from .data.data_collator import DefaultDataCollator, DataCollator, DataCollatorForLanguageModeling
     from .data.datasets import GlueDataset, TextDataset, LineByLineTextDataset, GlueDataTrainingArguments
+    from .data.datasets import ConceptnetDataset
 
     # Benchmarks
     from .benchmark import PyTorchBenchmark, PyTorchBenchmarkArguments

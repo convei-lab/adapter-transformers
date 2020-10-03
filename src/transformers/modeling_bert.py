@@ -718,6 +718,8 @@ class BertModel(BertModelAdaptersMixin, BertPreTrainedModel):
         last_hidden_states = outputs[0]  # The last hidden-state is the first element of the output tuple
 
         """
+        # override the default active adapters with those passed in the method call
+        adapter_names = adapter_names or self.active_adapters
         # some warnings if we don't use available adapters
         if not adapter_names and self.has_adapters():
             logger.warning("There are adapters available but none are passed to model.forward")
@@ -725,6 +727,7 @@ class BertModel(BertModelAdaptersMixin, BertPreTrainedModel):
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
         elif input_ids is not None:
+            #print('input_ids',input_ids, type(input_ids))
             input_shape = input_ids.size()
         elif inputs_embeds is not None:
             input_shape = inputs_embeds.size()[:-1]
@@ -820,7 +823,6 @@ class BertModelWithHeads(BertModelHeadsMixin, BertPreTrainedModel):
         token_type_ids = token_type_ids.view(-1, token_type_ids.size(-1)) if token_type_ids is not None else None
         position_ids = position_ids.view(-1, position_ids.size(-1)) if position_ids is not None else None
 
-        adapter_names = adapter_names or self.active_adapter_names
         outputs = self.bert(
             input_ids,
             attention_mask=attention_mask,

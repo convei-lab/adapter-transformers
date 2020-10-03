@@ -39,6 +39,7 @@ from transformers import (
     get_linear_schedule_with_warmup,
     setup_task_adapter_training,
     AdapterArguments,
+<<<<<<< HEAD
     Trainer
 )
 from transformers import conceptnet_convert_examples_to_features as convert_examples_to_features
@@ -47,6 +48,19 @@ from transformers import conceptnet_output_modes as output_modes
 from transformers import conceptnet_processors as processors
 
 
+=======
+    Trainer,
+    ConceptnetDataset,
+    EvalPrediction
+)
+from transformers import conceptnet_convert_examples_to_features as convert_examples_to_features
+from transformers import conceptnet_compute_metrics
+from transformers import conceptnet_output_modes as output_modes
+from transformers import conceptnet_processors as processors
+
+from transformers.data.data_collator import DataCollator
+from typing import Any, Dict, List, NewType, Tuple
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
 
 # try:
 #     from torch.utils.tensorboard import SummaryWriter
@@ -67,7 +81,11 @@ def set_seed(args):
 
 # def train(args, train_dataset, model, tokenizer):
 #     """ Train the model """
+<<<<<<< HEAD
 #         if args.local_rank in [-1, 0]:
+=======
+#     if args.local_rank in [-1, 0]:
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
 #         tb_writer = SummaryWriter()
 
 #     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
@@ -465,18 +483,24 @@ def main():
         help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']."
         "See details at https://nvidia.github.io/apex/amp.html",
     )
+<<<<<<< HEAD
     parser.add_argument(
         "--logging_dir",
         type=str,
         default="",
         help="logging file directory."
     )
+=======
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
     parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
     parser.add_argument("--server_ip", type=str, default="", help="For distant debugging.")
     parser.add_argument("--server_port", type=str, default="", help="For distant debugging.")
     args = parser.parse_args()
+<<<<<<< HEAD
     args.train_batch_size = args.per_gpu_train_batch_size
     args.per_device_train_batch_size = args.per_gpu_train_batch_size
+=======
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
 
     if (
         os.path.exists(args.output_dir)
@@ -528,8 +552,19 @@ def main():
     # Set seed
     set_seed(args)
 
+<<<<<<< HEAD
     # Prepare XNLI task
     args.task_name = "conceptnet"
+=======
+    # Prepare task
+    args.task_name = "conceptnet"
+    args.logging_first_step = True
+
+    args.train_batch_size = args.per_device_train_batch_size = args.per_gpu_train_batch_size
+    args.eval_batch_size = args.per_device_eval_batch_size = args.per_gpu_eval_batch_size=128
+    args.tpu_metrics_debug = None
+    args.save_total_limit = None
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
     if args.task_name not in processors:
         raise ValueError("Task not found: %s" % (args.task_name))
     processor = processors[args.task_name]()
@@ -559,7 +594,13 @@ def main():
     #     config=config,
     #     cache_dir=args.cache_dir,
     # )
+<<<<<<< HEAD
     # Adapter
+=======
+
+    # Adapter
+    adapter_args = AdapterArguments(train_adapter=True)
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
     model = AutoModelWithHeads.from_pretrained(
         args.model_name_or_path,
         from_tf=bool(".ckpt" in args.model_name_or_path),
@@ -568,6 +609,7 @@ def main():
     )
     model.add_classification_head(args.task_name, num_labels=num_labels)
     # Setup adapters
+<<<<<<< HEAD
     adapter_args = AdapterArguments(train_adapter=True,
                                     load_task_adapter="",
                                     load_lang_adapter=None,
@@ -576,6 +618,10 @@ def main():
                                     language=None
                                     )
     setup_task_adapter_training(model, args.task_name, adapter_args)
+=======
+    setup_task_adapter_training(model, args.task_name, adapter_args)
+    
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
 
     if args.local_rank == 0:
         torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
@@ -583,12 +629,54 @@ def main():
     model.to(args.device)
 
     logger.info("Training/evaluation parameters %s", args)
+<<<<<<< HEAD
 
     # Adapter way train
     # Initialize our Adapter-way Trainer
     train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)
     eval_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=True)
                 
+=======
+    # train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)
+    # eval_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=True)
+    train_dataset = ConceptnetDataset(args, tokenizer=tokenizer, mode="dev") if args.do_eval else None
+    eval_dataset = ConceptnetDataset(args, tokenizer=tokenizer, mode="test") if args.do_eval else None
+
+    # class MyCollator(DataCollator):
+    #     def collate_batch(self, features) -> Dict[str, torch.Tensor]:
+    #         first = features[0]
+    #         print('first', type(first), '\n', first)
+    #         for f in features[:4]:
+    #             print(f[0])
+    #             print(f[1])
+    #             print(f[2])
+    #         key = ['input_ids', 'attention_mask', 'token_type_ids', 'labels']
+    #         batch = {k:[] for k in key}
+    #         # batch = {k: f[i] for f in features for i, k in enumerate(key)}
+
+    #         for f in features:
+    #             batch['input_ids'].append(f[0])
+    #             batch['attention_mask'].append(f[1])
+    #             batch['token_type_ids'].append(f[2])
+    #             batch['labels'].append(f[3])
+    #         batch['input_ids'] = torch.Tensor(batch['input_ids'])
+    #         batch['attention_mask'] = torch.Tensor(batch['attention_mask'])
+    #         batch['token_type_ids'] = torch.Tensor(batch['token_type_ids'])
+    #         batch['labels'] = torch.Tensor(batch['labels'])
+
+    #         return batch
+
+
+    # data_collator = MyCollator()
+    # Initialize our Trainer
+    def compute_metrics(p: EvalPrediction) -> Dict:
+        if args.output_mode == "classification":
+            preds = np.argmax(p.predictions, axis=1)
+        elif args.output_mode == "regression":
+            preds = np.squeeze(p.predictions)
+        return conceptnet_compute_metrics(args.task_name, preds, p.label_ids)
+
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
     trainer = Trainer(
         model=model,
         args=args,
@@ -601,8 +689,11 @@ def main():
 
     # Training
     if args.do_train:
+<<<<<<< HEAD
         #global_step, tr_loss = train(args, train_dataset, model, tokenizer)
         #logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
+=======
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
         trainer.train(
             model_path=args.model_name_or_path if os.path.isdir(args.model_name_or_path) else None
         )
@@ -638,6 +729,7 @@ def main():
     # Evaluation
     results = {}
     if args.do_eval and args.local_rank in [-1, 0]:
+<<<<<<< HEAD
         # checkpoints = [args.output_dir]
         # if args.eval_all_checkpoints:
         #     checkpoints = list(
@@ -656,6 +748,8 @@ def main():
         #     results.update(result)
 
         # Adapter evaluate
+=======
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
         logger.info("*** Evaluate ***")
 
         # Loop to handle MNLI double evaluation (matched, mis-matched)
@@ -675,6 +769,10 @@ def main():
                         writer.write("%s = %s\n" % (key, value))
 
             results.update(eval_result)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9be265a43ff7d0f459f5c5dbad71e138eb76b1df
     return results
 
 
