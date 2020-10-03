@@ -33,7 +33,7 @@ from transformers import (
     Trainer,
     TrainingArguments,
     set_seed,
-    setup_task_adapter_training,
+    AdapterConfig,
     AdapterType
 )
 from transformers.modeling_bert import BertForMultipleChoice
@@ -158,8 +158,55 @@ def main():
     task_name = data_args.task_name
     adapter_args.train_adapter = True
     #model.add_classification_head(data_args.task_name, num_labels=num_labels)
-    setup_task_adapter_training(model, task_name, adapter_args)
 
+    # Setup adapters
+    # Previously oneline with pre-defined function in transformers.adapter_training.py --> setup_task_adapter_training(model, task_name, adapter_args)
+    # Changes in Adapter tag v1.0 
+    # See https://github.com/calpt/adapter-transformers/commit/f54a6c279291da8f16461b109a3a5d786a0ace0a#diff-f657b1bdfc81448d7704fc876f3988bd
+    adapter_args.load_lang_adapter = False
+    if adapter_args.train_adapter:
+        task_name = data_args.task_name
+        # check if adapter already exists, otherwise add it
+        if task_name not in model.config.adapters.adapter_list(AdapterType.text_task):
+            # resolve the adapter config
+            adapter_config = AdapterConfig.load(
+                adapter_args.adapter_config,
+                non_linearity=adapter_args.adapter_non_linearity,
+                reduction_factor=adapter_args.adapter_reduction_factor,
+            )
+            # load a pre-trained from Hub if specified
+            if adapter_args.load_adapter:
+                model.load_adapter(
+                    adapter_args.load_adapter, AdapterType.text_task, config=adapter_config, load_as=task_name,
+                )
+            # otherwise, add a fresh adapter
+            else:
+                model.add_adapter(task_name, AdapterType.text_task, config=adapter_config)
+        # optionally load a pre-trained language adapter
+        if adapter_args.load_lang_adapter:
+            # resolve the language adapter config
+            lang_adapter_config = AdapterConfig.load(
+                adapter_args.lang_adapter_config,
+                non_linearity=adapter_args.lang_adapter_non_linearity,
+                reduction_factor=adapter_args.lang_adapter_reduction_factor,
+            )
+            # load the language adapter from Hub
+            lang_adapter_name = model.load_adapter(
+                adapter_args.load_lang_adapter,
+                AdapterType.text_lang,
+                config=lang_adapter_config,
+                load_as=adapter_args.language,
+            )
+        else:
+            lang_adapter_name = None
+        # Freeze all model weights except of those of this adapter
+        model.train_adapter([task_name])
+        # Set the adapters to be used in every forward pass
+        if lang_adapter_name:
+            model.set_active_adapters([lang_adapter_name, task_name])
+        else:
+            model.set_active_adapters([task_name])
+    
     # Get datasets
     train_dataset = (
         MultipleChoiceDataset(
@@ -202,6 +249,8 @@ def main():
         adapter_names=[task_name],
     )
 
+    for (n,p) in model.named_parameters():
+        print(n, p.requires_grad)
     # Training
     if training_args.do_train:
         trainer.train(
